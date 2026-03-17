@@ -3,4 +3,4 @@
   function = "claude-proxy"
 
 [build]
-  publish = "public"
+  publish = "."
