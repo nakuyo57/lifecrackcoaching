@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LifeCrack — Coaching Session Assessor</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F7F6F2;
+  --surface: #FFFFFF;
+  --surface2: #F1EFE9;
+  --border: rgba(0,0,0,0.1);
+  --border-med: rgba(0,0,0,0.18);
+  --text: #1A1917;
+  --text-2: #6B6963;
+  --text-3: #9E9B95;
+  --teal: #0F6E56;
+  --teal-light: #E1F5EE;
+  --teal-mid: #1D9E75;
+  --amber: #BA7517;
+  --amber-light: #FAEEDA;
+  --red: #A32D2D;
+  --red-light: #FCEBEB;
+  --ai-color: #534AB7;
+  --ai-light: #EEEDFE;
+  --font: 'Georgia', 'Times New Roman', serif;
+  --sans: system-ui, -apple-system, sans-serif;
+}
+
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+
+/* ── GATE ── */
+#gate { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+.gate-card { background: var(--surface); border: 0.5px solid var(--border-med); border-radius: 16px; padding: 3rem 2.5rem; max-width: 420px; width: 100%; text-align: center; }
+.gate-logo { font-family: var(--font); font-size: 28px; font-weight: normal; letter-spacing: -0.5px; margin-bottom: 6px; }
+.gate-sub { font-size: 13px; color: var(--text-2); margin-bottom: 2.5rem; letter-spacing: 0.03em; }
+.gate-card input { width: 100%; padding: 12px 16px; border: 0.5px solid var(--border-med); border-radius: 8px; font-size: 15px; font-family: var(--sans); background: var(--bg); color: var(--text); outline: none; text-align: center; letter-spacing: 0.15em; margin-bottom: 12px; }
+.gate-card input:focus { border-color: var(--text); }
+.gate-btn { width: 100%; padding: 12px; background: var(--text); color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: var(--sans); transition: opacity 0.15s; }
+.gate-btn:hover { opacity: 0.85; }
+.gate-error { font-size: 12px; color: var(--red); margin-top: 8px; }
+
+/* ── LAYOUT ── */
+#app { display: none; min-height: 100vh; }
+.topbar { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 2rem; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.topbar-logo { font-family: var(--font); font-size: 18px; font-weight: normal; }
+.topbar-meta { font-size: 12px; color: var(--text-3); }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.tbtn { padding: 6px 14px; border-radius: 20px; border: 0.5px solid var(--border-med); font-size: 12px; cursor: pointer; background: transparent; color: var(--text-2); transition: all 0.15s; font-family: var(--sans); }
+.tbtn:hover { background: var(--surface2); color: var(--text); }
+.tbtn.primary { background: var(--text); color: white; border-color: var(--text); }
+
+.main { display: grid; grid-template-columns: 1fr 340px; gap: 0; min-height: calc(100vh - 52px); }
+.left-panel { padding: 2rem; overflow-y: auto; }
+.right-panel { border-left: 0.5px solid var(--border); background: var(--surface); padding: 1.5rem; overflow-y: auto; position: sticky; top: 52px; height: calc(100vh - 52px); }
+
+/* ── STEPS ── */
+.step { display: none; }
+.step.active { display: block; }
+
+/* ── TRANSCRIPT ── */
+.step-heading { font-family: var(--font); font-size: 22px; font-weight: normal; margin-bottom: 6px; }
+.step-sub { font-size: 13px; color: var(--text-2); margin-bottom: 1.5rem; line-height: 1.5; }
+.meta-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1.5rem; }
+.field-group label { display: block; font-size: 11px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+.field-group input, .field-group select { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border-med); border-radius: 8px; font-size: 14px; font-family: var(--sans); background: var(--bg); color: var(--text); outline: none; }
+.field-group input:focus, .field-group select:focus { border-color: var(--text); }
+.transcript-box { width: 100%; min-height: 280px; padding: 14px 16px; border: 0.5px solid var(--border-med); border-radius: 10px; font-size: 13px; font-family: var(--font); line-height: 1.7; background: var(--surface); color: var(--text); resize: vertical; outline: none; }
+.transcript-box:focus { border-color: var(--text); }
+.transcript-hints { font-size: 12px; color: var(--text-3); margin-top: 6px; line-height: 1.5; }
+.analyze-btn { margin-top: 1.25rem; padding: 12px 28px; background: var(--text); color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: var(--sans); transition: opacity 0.15s; display: flex; align-items: center; gap: 8px; }
+.analyze-btn:hover { opacity: 0.85; }
+.analyze-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ── LOADING ── */
+.loading-state { text-align: center; padding: 4rem 2rem; }
+.spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1.5rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-label { font-size: 14px; color: var(--text-2); }
+.loading-detail { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+/* ── ASSESSMENT ── */
+.phase-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.pnav-btn { padding: 5px 12px; border-radius: 16px; border: 0.5px solid var(--border-med); font-size: 12px; cursor: pointer; background: transparent; color: var(--text-2); transition: all 0.15s; font-family: var(--sans); }
+.pnav-btn.active { background: var(--text); color: white; border-color: var(--text); }
+.pnav-btn.done { border-color: var(--teal-mid); color: var(--teal); background: var(--teal-light); }
+
+.phase-hdr { padding-bottom: 1rem; border-bottom: 0.5px solid var(--border); margin-bottom: 1.25rem; }
+.phase-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 3px; }
+.phase-name { font-family: var(--font); font-size: 20px; font-weight: normal; margin-bottom: 4px; }
+.phase-desc { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.cond-badge { display: inline-block; font-size: 11px; background: var(--amber-light); color: var(--amber); padding: 2px 8px; border-radius: 10px; margin-top: 6px; }
+
+.competency { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+.comp-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+.comp-num { font-size: 11px; color: var(--text-3); }
+.comp-title { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cond-tag { font-size: 10px; background: var(--amber-light); color: var(--amber); padding: 1px 6px; border-radius: 8px; font-weight: normal; }
+.comp-score { font-size: 20px; font-weight: 500; min-width: 48px; text-align: right; }
+.score-none { color: var(--text-3); }
+.score-low { color: var(--red); }
+.score-mid { color: var(--amber); }
+.score-high { color: var(--teal); }
+
+/* marker rows */
+.markers-header { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; padding: 0 2px; }
+
+.marker-row { border-top: 0.5px solid var(--border); padding: 10px 0; }
+.marker-top { display: flex; gap: 10px; align-items: flex-start; }
+.marker-text { flex: 1; font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+.ai-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: var(--ai-light); color: var(--ai-color); padding: 2px 7px; border-radius: 6px; margin-top: 5px; cursor: help; position: relative; }
+.ai-chip-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ai-color); flex-shrink: 0; }
+.ai-evidence { display: none; position: absolute; left: 0; top: calc(100% + 4px); background: var(--surface); border: 0.5px solid var(--border-med); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--text-2); line-height: 1.5; width: 280px; z-index: 50; font-style: italic; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.ai-chip:hover .ai-evidence { display: block; }
+
+.rating-group { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.rating-btns { display: flex; gap: 3px; }
+.rbtn { width: 30px; height: 30px; border-radius: 6px; border: 0.5px solid var(--border-med); font-size: 12px; cursor: pointer; background: var(--bg); color: var(--text-2); display: flex; align-items: center; justify-content: center; transition: all 0.1s; font-weight: 500; font-family: var(--sans); }
+.rbtn:hover { border-color: var(--border-med); background: var(--surface2); }
+.rbtn.sel-0 { background: var(--red-light); border-color: #E24B4A; color: #501313; }
+.rbtn.sel-1 { background: var(--amber-light); border-color: var(--amber); color: #412402; }
+.rbtn.sel-2 { background: var(--teal-light); border-color: var(--teal-mid); color: #04342C; }
+.rbtn.sel-na { background: #D3D1C7; border-color: #888780; color: #2C2C2A; }
+
+.override-flag { font-size: 10px; color: var(--amber); display: flex; align-items: center; gap: 3px; }
+.override-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--amber); }
+
+.comp-notes { margin-top: 12px; }
+.comp-notes label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
+.comp-notes textarea { width: 100%; padding: 9px 12px; border: 0.5px solid var(--border-med); border-radius: 8px; font-size: 13px; font-family: var(--font); color: var(--text); background: var(--bg); resize: vertical; min-height: 64px; outline: none; line-height: 1.5; }
+.comp-notes textarea:focus { border-color: var(--text); }
+
+.step-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 0.5px solid var(--border); }
+.sfooter-info { font-size: 12px; color: var(--text-3); }
+.sfooter-btns { display: flex; gap: 8px; }
+.sfbtn { padding: 9px 20px; border-radius: 8px; border: 0.5px solid var(--border-med); font-size: 14px; cursor: pointer; background: transparent; color: var(--text); font-family: var(--sans); transition: all 0.15s; }
+.sfbtn:hover { background: var(--surface2); }
+.sfbtn.primary { background: var(--text); color: white; border-color: var(--text); }
+
+/* ── RIGHT PANEL ── */
+.rp-section { margin-bottom: 1.5rem; }
+.rp-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-3); margin-bottom: 10px; }
+.rp-score-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 0.5px solid var(--border); }
+.rp-score-row:last-child { border-bottom: none; }
+.rp-comp-name { font-size: 12px; color: var(--text-2); }
+.rp-comp-score { font-size: 13px; font-weight: 500; }
+.rp-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 2px; overflow: hidden; }
+.rp-bar-fill { height: 100%; border-radius: 2px; }
+
+.overall-chip { background: var(--surface2); border-radius: 10px; padding: 14px 16px; text-align: center; margin-bottom: 1.5rem; }
+.oc-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-3); margin-bottom: 4px; }
+.oc-score { font-size: 36px; font-weight: 500; line-height: 1; }
+
+.rp-legend { display: flex; flex-direction: column; gap: 5px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.gen-report-btn { width: 100%; padding: 11px; background: var(--text); color: white; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--sans); transition: opacity 0.15s; margin-top: 0.5rem; }
+.gen-report-btn:hover { opacity: 0.85; }
+.gen-report-btn:disabled { opacity: 0.35; cursor: default; }
+
+.transcript-excerpt { font-size: 12px; font-family: var(--font); color: var(--text-2); line-height: 1.6; background: var(--surface2); border-radius: 8px; padding: 10px 12px; max-height: 180px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+
+/* ── SUMMARY ── */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.5rem; }
+.sc { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px; }
+.sc-phase { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 3px; }
+.sc-name { font-size: 12px; font-weight: 500; margin-bottom: 8px; line-height: 1.3; }
+.sc-score { font-size: 22px; font-weight: 500; }
+.sc-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.sc-bar-fill { height: 100%; border-radius: 2px; }
+.overall-summary { text-align: center; padding: 2rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; margin-bottom: 1.5rem; }
+.os-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 8px; }
+.os-score { font-size: 52px; font-weight: 500; line-height: 1; }
+.os-sub { font-size: 13px; color: var(--text-2); margin-top: 6px; }
+.delta-note { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+.report-section { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+.rs-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-3); margin-bottom: 10px; }
+.rs-content { font-size: 14px; line-height: 1.7; color: var(--text); font-family: var(--font); white-space: pre-wrap; }
+.rs-spinner { display: flex; align-items: center; gap: 8px; color: var(--text-2); font-size: 13px; }
+.rs-spinner .spinner { width: 16px; height: 16px; margin: 0; border-width: 1.5px; }
+
+.print-btn { width: 100%; padding: 12px; border: 0.5px solid var(--border-med); border-radius: 8px; font-size: 14px; cursor: pointer; background: transparent; color: var(--text); font-family: var(--sans); transition: all 0.15s; margin-top: 8px; }
+.print-btn:hover { background: var(--surface2); }
+
+/* ── PRINT ── */
+@media print {
+  .topbar, .right-panel, .phase-nav, .step-footer, #gate, .analyze-btn, .gen-report-btn, .print-btn, .ai-chip, .rating-btns, .tbtn { display: none !important; }
+  .main { grid-template-columns: 1fr; }
+  .left-panel { padding: 0; }
+  body { background: white; font-size: 12px; }
+  .competency { border: 1px solid #ddd; break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-logo">LifeCrack</div>
+    <div class="gate-sub">Coaching Session Assessor — Certified Coaches Only</div>
+    <input type="password" id="code-input" placeholder="Enter cohort code" autocomplete="off" />
+    <button class="gate-btn" onclick="checkCode()">Enter</button>
+    <div class="gate-error" id="gate-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo">LifeCrack Assessor</div>
+    <div class="topbar-meta" id="topbar-meta"></div>
+    <div class="topbar-actions">
+      <button class="tbtn" onclick="goToStep('transcript')">New session</button>
+      <button class="tbtn primary" onclick="window.print()">Print / PDF</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="left-panel">
+
+      <!-- STEP: TRANSCRIPT -->
+      <div class="step active" id="step-transcript">
+        <div class="step-heading">Session transcript</div>
+        <div class="step-sub">Paste the session transcript below. Include timestamps where available. The AI will read it and pre-assess each marker — you confirm or adjust afterwards.</div>
+        <div class="meta-row">
+          <div class="field-group"><label>Coach name</label><input type="text" id="coach-name" placeholder="e.g. A. Dupont" /></div>
+          <div class="field-group"><label>Session date</label><input type="date" id="session-date" /></div>
+          <div class="field-group"><label>Cohort / Session #</label><input type="text" id="cohort-session" placeholder="e.g. C4 / S2" /></div>
+        </div>
+        <div class="field-group" style="margin-bottom:1rem;">
+          <label>Session context (optional)</label>
+          <input type="text" id="session-context" placeholder="e.g. First session, client is a senior pharma manager facing team conflict" />
+        </div>
+        <textarea class="transcript-box" id="transcript" placeholder="[00:00] Coach: Good morning. What would you like to focus on today?
+[00:12] Client: I've been struggling with how to handle my team lead..."></textarea>
+        <div class="transcript-hints">Supported languages: English, Japanese, French. Timestamps are optional but help the AI cite evidence accurately.</div>
+        <button class="analyze-btn" id="analyze-btn" onclick="runAnalysis()">
+          <span>Analyze transcript with AI</span>
+          <span style="font-size:12px;opacity:0.7">↗</span>
+        </button>
+      </div>
+
+      <!-- STEP: LOADING -->
+      <div class="step" id="step-loading">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <div class="loading-label" id="loading-label">Reading transcript…</div>
+          <div class="loading-detail" id="loading-detail">Identifying coaching moves across all 8 competencies</div>
+        </div>
+      </div>
+
+      <!-- STEP: ASSESS -->
+      <div class="step" id="step-assess">
+        <div class="phase-nav" id="phase-nav"></div>
+        <div id="phase-content"></div>
+        <div class="step-footer">
+          <span class="sfooter-info" id="assess-progress"></span>
+          <div class="sfooter-btns">
+            <button class="sfbtn" id="btn-prev" onclick="prevPhase()">← Back</button>
+            <button class="sfbtn primary" id="btn-next" onclick="nextPhase()">Next phase →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP: SUMMARY -->
+      <div class="step" id="step-summary">
+        <div class="step-heading">Assessment summary</div>
+        <div class="overall-summary" id="overall-summary"></div>
+        <div class="summary-grid" id="summary-grid"></div>
+        <div id="report-sections"></div>
+        <button class="print-btn" onclick="window.print()">Print / export as PDF</button>
+      </div>
+
+    </div><!-- /left-panel -->
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel" id="right-panel">
+      <div class="rp-section">
+        <div class="rp-title">Live scores</div>
+        <div class="overall-chip">
+          <div class="oc-label">Overall</div>
+          <div class="oc-score score-none" id="rp-overall">—</div>
+        </div>
+        <div id="rp-scores"></div>
+      </div>
+      <div class="rp-section">
+        <div class="rp-title">Legend</div>
+        <div class="rp-legend">
+          <div class="legend-row"><div class="legend-dot" style="background:#E24B4A"></div>0 — Absent</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#EF9F27"></div>1 — Partial</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#1D9E75"></div>2 — Present</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#888780"></div>N/A — Not applicable</div>
+          <div class="legend-row" style="margin-top:6px;"><div style="width:8px;height:8px;border-radius:2px;background:var(--ai-color);flex-shrink:0;"></div><span style="color:var(--ai-color);">AI suggestion</span></div>
+          <div class="legend-row"><div style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0;"></div>Assessor override</div>
+        </div>
+      </div>
+      <div class="rp-section" id="rp-transcript-section" style="display:none;">
+        <div class="rp-title">Transcript excerpt</div>
+        <div class="transcript-excerpt" id="rp-transcript"></div>
+      </div>
+      <button class="gen-report-btn" id="gen-report-btn" onclick="generateReport()" disabled>Generate written report</button>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+const COHORT_CODES = ['LIFECRACK2025', 'LC-COHORT1', 'DEMO'];
+
+const FRAMEWORK = [
+  { id:'baseline', phase:'Phase I', title:'The Baseline', desc:'Observable throughout the entire session — from first to last minute.', conditional:false,
+    competencies:[
+      { id:'c1', num:'1', name:'Objective self-management', conditional:false,
+        markers:['Suspends judgment: listens without defending a viewpoint or rushing to solve the problem','Navigates ambiguity: allows the client to sit with complexity without superficial fixes','Manages emotional reactivity: remains a calm, objective sounding board','Maintains neutrality: asks open-ended questions rather than leading to predetermined answers']},
+      { id:'c2', num:'2', name:'Structuring the dialogic arc', conditional:false,
+        markers:['Initiates divergence: explicitly invites the client to explore multiple perspectives before deciding','Holds the silence: provides room for meaning to emerge, client does majority of talking','Drives convergence: actively guides the client to narrow ideas into a clear direction']}
+    ]
+  },
+  { id:'exploration', phase:'Phase II', title:'The Exploration', desc:'Observable in the early/mid-session. The coach helps the client break down their business problem linguistically and narratively.', conditional:false,
+    competencies:[
+      { id:'c3', num:'3', name:'Clarifying reality', conditional:false,
+        markers:['Distinguishes evidence from judgment: separates observable facts from subjective opinions','Challenges absolute truths: challenges ungrounded assessments treated as unchangeable facts','Identifies linguistic viruses: points out specific communication failures (e.g. complaining without requesting)','Demands data: invites the client to back up professional judgments with specific evidence']},
+      { id:'c4', num:'4', name:'Deconstructing the professional reality', conditional:false,
+        markers:['Externalizes the problem: frames the breakdown as external, separating problem from person','Unpacks dominant discourses: prompts client to question unspoken organizational assumptions','Explores the problem\'s history: asks how the current situation was constructed over time','Reduces defensiveness: objectifies the problem to open collaborative problem-solving']}
+    ]
+  },
+  { id:'deepening', phase:'Phase III', title:'The Deepening', desc:'Conditional — observable in the "Groan Zone." Triggered only when the breakdown is recurring, identity-based, or moral.', conditional:true,
+    competencies:[
+      { id:'c5', num:'5', name:'Re-authoring professional identity', conditional:true, trigger:'Triggered when misaligned professional identity is the root of a recurring issue',
+        markers:['Identifies the recurring pattern: points out that the current breakdown is a recurring theme','Maps the landscapes: asks what past actions reveal about core professional values','Highlights unique outcomes: recalls past instances of successfully navigating similar breakdowns','Articulates the new narrative: partners with client to summarize a new professional identity']},
+      { id:'c6', num:'6', name:'Cultivating virtues and ethical alignment', conditional:true, trigger:'Triggered when the client faces moral dilemmas or seeks a more ethical way of operating',
+        markers:['Identifying core virtues: invites client to articulate specific virtues as leadership foundation','Embodying values in action: challenges client to translate abstract values into concrete behaviors','Navigating the ethical peak: helps client calibrate behavior toward the ethical middle ground','Structuring an ethical framework: resolves inner conflicts between ambitions and personal ethics']}
+    ]
+  },
+  { id:'resolution', phase:'Phase IV', title:'The Resolution', desc:'Observable at the end of the session. How the coach lands the plane — insights must translate into ROI and coordinated action.', conditional:false,
+    competencies:[
+      { id:'c7', num:'7', name:'Coordinating business execution', conditional:false,
+        markers:['Formulates clear requests: defines exactly who to ask for action with specific conditions of satisfaction','Establishes explicit promises: articulates the client\'s own commitments and verifies competence to fulfill them','Designs offers and responses: verifies client can explicitly accept, decline, or renegotiate actions','Prompts authoritative declarations: supports client in declaring a new direction or redefining reality']},
+      { id:'c8', num:'8', name:'Harvesting insights and accountability', conditional:false,
+        markers:['Captures the harvest: actively records key insights, decisions, and new distinctions','Summarizes learning: asks client to explicitly state what they have learned about their narrative','Translates narrative into practice: designs post-session practices to test the new narrative','Establishes metrics: sets a clear metric or method of accountability for new actions']}
+    ]
+  }
+];
+
+let state = {
+  currentPhase: 0,
+  ratings: {},      // "c1_0" => 0|1|2|-1(N/A)|null
+  aiRatings: {},    // same key => same values from AI
+  aiEvidence: {},   // same key => string quote
+  notes: {},        // comp id => string
+  meta: {},
+  transcript: '',
+  reportSections: {}
+};
+
+// ── GATE ──
+function checkCode() {
+  const val = document.getElementById('code-input').value.trim().toUpperCase();
+  if (COHORT_CODES.includes(val)) {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    updateRightPanel();
+  } else {
+    document.getElementById('gate-error').textContent = 'Invalid code. Please check with your program facilitator.';
+  }
+}
+document.getElementById('code-input').addEventListener('keydown', e => { if(e.key==='Enter') checkCode(); });
+
+// ── STEP NAV ──
+function goToStep(id) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-' + id).classList.add('active');
+}
+
+// ── ANALYSIS ──
+async function runAnalysis() {
+  const transcript = document.getElementById('transcript').value.trim();
+  if (transcript.length < 100) { alert('Please paste a session transcript of at least a few exchanges.'); return; }
+
+  state.transcript = transcript;
+  state.meta = {
+    coach: document.getElementById('coach-name').value,
+    date: document.getElementById('session-date').value,
+    cohort: document.getElementById('cohort-session').value,
+    context: document.getElementById('session-context').value
+  };
+  document.getElementById('topbar-meta').textContent = [state.meta.coach, state.meta.cohort].filter(Boolean).join(' · ');
+
+  goToStep('loading');
+  document.getElementById('loading-label').textContent = 'Reading transcript…';
+  document.getElementById('loading-detail').textContent = 'Identifying coaching moves across all 8 competencies';
+
+  const markersFlat = [];
+  FRAMEWORK.forEach(phase => {
+    phase.competencies.forEach(comp => {
+      comp.markers.forEach((m, i) => {
+        markersFlat.push({ key: comp.id + '_' + i, compId: comp.id, markerIdx: i, text: m, phaseTitle: phase.title, compName: comp.name, conditional: comp.conditional });
+      });
+    });
+  });
+
+  const markerList = markersFlat.map((m, idx) =>
+    `${idx+1}. [${m.key}] (Competency: ${m.compName}${m.conditional?' — CONDITIONAL':''}) ${m.text}`
+  ).join('\n');
+
+  const prompt = `You are an expert assessor of coaching sessions using the LifeCrack framework. Your job is to analyze the following coaching session transcript and rate each behavioral marker.
+
+TRANSCRIPT:
+---
+${transcript.substring(0, 12000)}
+---
+
+${state.meta.context ? `SESSION CONTEXT: ${state.meta.context}` : ''}
+
+Rate each of the following markers based ONLY on what is observable in the transcript text. 
+
+Scoring:
+- 2 = Present: clearly and consistently demonstrated
+- 1 = Partial: present but incomplete, inconsistent, or only briefly demonstrated
+- 0 = Absent: not observed in the transcript
+- NA = Not applicable: for CONDITIONAL markers only, if the triggering condition was not present in this session
+
+MARKERS TO ASSESS:
+${markerList}
+
+Respond with ONLY a valid JSON array. No preamble, no explanation outside the JSON. Each object must have:
+- "key": the marker key exactly as shown in brackets
+- "rating": number 0, 1, or 2, or the string "NA"
+- "evidence": a direct quote or timestamp reference from the transcript (max 120 chars) that supports your rating. If rating is NA, write "Conditional competency not triggered in this session."
+
+Example format:
+[{"key":"c1_0","rating":2,"evidence":"[02:14] Coach: I hear that — what else might be going on here?"},{"key":"c1_1","rating":1,"evidence":"Coach allows pause but then offers interpretation at [05:30]"}]`;
+
+  try {
+    document.getElementById('loading-detail').textContent = 'Analyzing markers — this may take 20–40 seconds';
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const text = data.content.map(b => b.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const results = JSON.parse(clean);
+
+    results.forEach(r => {
+      const ratingVal = r.rating === 'NA' || r.rating === null ? -1 : Number(r.rating);
+      state.aiRatings[r.key] = ratingVal;
+      state.aiEvidence[r.key] = r.evidence || '';
+      state.ratings[r.key] = ratingVal;
+    });
+
+    document.getElementById('rp-transcript-section').style.display = 'block';
+    document.getElementById('rp-transcript').textContent = transcript.substring(0, 600) + (transcript.length > 600 ? '…' : '');
+
+    goToStep('assess');
+    state.currentPhase = 0;
+    renderPhase();
+    updateRightPanel();
+  } catch(err) {
+    console.error(err);
+    document.getElementById('loading-label').textContent = 'Analysis failed';
+    document.getElementById('loading-detail').textContent = 'Check the transcript and try again, or proceed to manual assessment.';
+    setTimeout(() => { goToStep('transcript'); }, 3000);
+  }
+}
+
+// ── RATING ──
+function setRating(compId, markerIdx, val) {
+  const key = compId + '_' + markerIdx;
+  state.ratings[key] = state.ratings[key] === val ? null : val;
+  renderPhase();
+  updateRightPanel();
+}
+
+function setNote(compId, val) { state.notes[compId] = val; }
+
+// ── SCORING ──
+function getCompScore(comp) {
+  const vals = comp.markers.map((_, i) => state.ratings[comp.id + '_' + i]);
+  const rated = vals.filter(v => v !== null && v !== undefined && v !== -1);
+  if (rated.length === 0) return null;
+  return Math.round(rated.reduce((s,v) => s+v, 0) / rated.length * 50);
+}
+
+function getOverallScore() {
+  let total = 0, count = 0;
+  FRAMEWORK.forEach(p => p.competencies.forEach(c => { const s = getCompScore(c); if (typeof s === 'number') { total += s; count++; } }));
+  return count === 0 ? null : Math.round(total / count);
+}
+
+function scoreColor(s) { if (s===null) return 'score-none'; if (s<40) return 'score-low'; if (s<70) return 'score-mid'; return 'score-high'; }
+function barColor(s) { if (s===null||s==='N/A') return '#D3D1C7'; if (s<40) return '#E24B4A'; if (s<70) return '#EF9F27'; return '#1D9E75'; }
+
+// ── RENDER PHASE ──
+function renderPhase() {
+  const phase = FRAMEWORK[state.currentPhase];
+
+  // nav
+  document.getElementById('phase-nav').innerHTML = FRAMEWORK.map((p, i) => {
+    let cls = 'pnav-btn';
+    if (i === state.currentPhase) cls += ' active';
+    return `<button class="${cls}" onclick="gotoPhase(${i})">${p.phase}: ${p.title}</button>`;
+  }).join('');
+
+  // header + competencies
+  let html = `<div class="phase-hdr">
+    <div class="phase-tag">${phase.phase}</div>
+    <div class="phase-name">${phase.title}</div>
+    <div class="phase-desc">${phase.desc}</div>
+    ${phase.conditional ? '<span class="cond-badge">Conditional — score only if triggered</span>' : ''}
+  </div>`;
+
+  phase.competencies.forEach(comp => {
+    const score = getCompScore(comp);
+    const scoreDisp = score === null ? '—' : score + '%';
+    html += `<div class="competency">
+      <div class="comp-hdr">
+        <div><div class="comp-num">Competency ${comp.num}</div>
+          <div class="comp-title">${comp.name}${comp.conditional ? '<span class="cond-tag">conditional</span>' : ''}</div>
+          ${comp.trigger ? `<div style="font-size:12px;color:var(--text-3);font-style:italic;margin-top:2px;">${comp.trigger}</div>` : ''}
+        </div>
+        <div class="comp-score ${scoreColor(score)}">${scoreDisp}</div>
+      </div>
+      <div class="markers-header"><span>Marker</span><span>0 — absent &nbsp; 1 — partial &nbsp; 2 — present &nbsp; N/A</span></div>`;
+
+    comp.markers.forEach((m, i) => {
+      const key = comp.id + '_' + i;
+      const cur = state.ratings[key];
+      const ai = state.aiRatings[key];
+      const evidence = state.aiEvidence[key] || '';
+      const isOverride = (cur !== null && cur !== undefined && ai !== undefined && cur !== ai);
+      const aiLabel = ai === -1 ? 'N/A' : ai === 0 ? '0' : ai === 1 ? '1' : ai === 2 ? '2' : '?';
+
+      html += `<div class="marker-row">
+        <div class="marker-top">
+          <div class="marker-text">
+            ${m}
+            ${ai !== undefined ? `<div><span class="ai-chip">
+              <span class="ai-chip-dot"></span>
+              AI: ${aiLabel}
+              <span class="ai-evidence">${evidence || 'No specific evidence quoted.'}</span>
+            </span></div>` : ''}
+          </div>
+          <div class="rating-group">
+            <div class="rating-btns">
+              ${[{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:-1,l:'N/A'}].map(o => {
+                let sel = '';
+                if (cur === o.v) sel = o.v===0?'sel-0':o.v===1?'sel-1':o.v===2?'sel-2':'sel-na';
+                return `<button class="rbtn ${sel}" onclick="setRating('${comp.id}',${i},${o.v})">${o.l}</button>`;
+              }).join('')}
+            </div>
+            ${isOverride ? `<div class="override-flag"><div class="override-dot"></div>overridden</div>` : ''}
+          </div>
+        </div>
+      </div>`;
+    });
+
+    html += `<div class="comp-notes">
+        <label>Observer notes</label>
+        <textarea placeholder="Qualitative observations, timestamps, context…" oninput="setNote('${comp.id}',this.value)">${state.notes[comp.id]||''}</textarea>
+      </div></div>`;
+  });
+
+  document.getElementById('phase-content').innerHTML = html;
+
+  // footer
+  const total = FRAMEWORK.reduce((s,p) => s + p.competencies.reduce((s2,c) => s2 + c.markers.length, 0), 0);
+  const rated = Object.values(state.ratings).filter(v => v !== null && v !== undefined).length;
+  document.getElementById('assess-progress').textContent = `${rated} / ${total} markers rated`;
+  document.getElementById('btn-prev').disabled = state.currentPhase === 0;
+  document.getElementById('btn-next').textContent = state.currentPhase === FRAMEWORK.length-1 ? 'Go to summary →' : 'Next phase →';
+}
+
+function gotoPhase(i) { state.currentPhase = i; renderPhase(); window.scrollTo(0,0); }
+function prevPhase() { if (state.currentPhase > 0) { state.currentPhase--; renderPhase(); window.scrollTo(0,0); } }
+function nextPhase() {
+  if (state.currentPhase < FRAMEWORK.length - 1) { state.currentPhase++; renderPhase(); window.scrollTo(0,0); }
+  else { goToStep('summary'); renderSummary(); window.scrollTo(0,0); }
+}
+
+// ── RIGHT PANEL ──
+function updateRightPanel() {
+  const overall = getOverallScore();
+  const el = document.getElementById('rp-overall');
+  el.textContent = overall === null ? '—' : overall + '%';
+  el.className = 'oc-score ' + scoreColor(overall);
+
+  let html = '';
+  FRAMEWORK.forEach(phase => {
+    html += `<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-3);margin:10px 0 4px;">${phase.phase}</div>`;
+    phase.competencies.forEach(comp => {
+      const s = getCompScore(comp);
+      const d = s === null ? '—' : s + '%';
+      html += `<div class="rp-score-row">
+        <div><div class="rp-comp-name">${comp.num}. ${comp.name}</div>
+          <div class="rp-bar"><div class="rp-bar-fill" style="width:${s||0}%;background:${barColor(s)};"></div></div>
+        </div>
+        <div class="rp-comp-score ${scoreColor(s)}">${d}</div>
+      </div>`;
+    });
+  });
+  document.getElementById('rp-scores').innerHTML = html;
+
+  const rated = Object.values(state.ratings).filter(v => v !== null && v !== undefined).length;
+  document.getElementById('gen-report-btn').disabled = rated < 10;
+}
+
+// ── SUMMARY ──
+function renderSummary() {
+  const overall = getOverallScore();
+  document.getElementById('overall-summary').innerHTML = `
+    <div class="os-label">Overall session score</div>
+    <div class="os-score ${scoreColor(overall)}">${overall === null ? '—' : overall + '%'}</div>
+    <div class="os-sub">Assessor-confirmed scores · ${Object.values(state.ratings).filter(v=>v!==null&&v!==undefined).length} markers rated</div>
+    <div class="delta-note">${countOverrides()} assessor override(s) from AI draft</div>`;
+
+  let grid = '';
+  FRAMEWORK.forEach(phase => {
+    phase.competencies.forEach(comp => {
+      const s = getCompScore(comp);
+      const d = s === null ? '—' : s + '%';
+      grid += `<div class="sc">
+        <div class="sc-phase">${phase.phase}</div>
+        <div class="sc-name">${comp.num}. ${comp.name}</div>
+        <div class="sc-score ${scoreColor(s)}">${d}</div>
+        <div class="sc-bar"><div class="sc-bar-fill" style="width:${s||0}%;background:${barColor(s)};"></div></div>
+      </div>`;
+    });
+  });
+  document.getElementById('summary-grid').innerHTML = grid;
+
+  document.getElementById('report-sections').innerHTML = `
+    <div class="report-section">
+      <div class="rs-label">Written assessment report</div>
+      <div class="rs-content" id="report-text" style="color:var(--text-3);font-style:italic;">Click "Generate written report" in the sidebar to produce the full narrative report.</div>
+    </div>`;
+
+  updateRightPanel();
+}
+
+function countOverrides() {
+  let n = 0;
+  Object.keys(state.ratings).forEach(k => {
+    if (state.ratings[k] !== null && state.aiRatings[k] !== undefined && state.ratings[k] !== state.aiRatings[k]) n++;
+  });
+  return n;
+}
+
+// ── REPORT GENERATION ──
+async function generateReport() {
+  goToStep('summary');
+  renderSummary();
+
+  const lines = [`LifeCrack Coaching Session Assessment\nCoach: ${state.meta.coach||'—'} | Date: ${state.meta.date||'—'} | ${state.meta.cohort||''}\nContext: ${state.meta.context||'Not provided'}\n`];
+  FRAMEWORK.forEach(phase => {
+    lines.push(`--- ${phase.phase}: ${phase.title} ---`);
+    phase.competencies.forEach(comp => {
+      const score = getCompScore(comp);
+      const d = score === null ? 'not rated' : score === -1 ? 'N/A' : score + '%';
+      lines.push(`Competency ${comp.num} — ${comp.name}: ${d}`);
+      comp.markers.forEach((m, i) => {
+        const v = state.ratings[comp.id + '_' + i];
+        const vd = v===null||v===undefined ? '—' : v===-1 ? 'N/A' : v===0 ? 'Absent (0)' : v===1 ? 'Partial (1)' : 'Present (2)';
+        const ai = state.aiRatings[comp.id + '_' + i];
+        const override = (v !== null && v !== undefined && ai !== undefined && v !== ai) ? ' [assessor override]' : '';
+        lines.push(`  • ${m}: ${vd}${override}`);
+      });
+      if (state.notes[comp.id]?.trim()) lines.push(`  Notes: ${state.notes[comp.id]}`);
+      lines.push('');
+    });
+  });
+  lines.push(`Overall: ${getOverallScore() ?? 'incomplete'}% | Overrides: ${countOverrides()}`);
+
+  const prompt = lines.join('\n') + `\n\nWrite a professional LifeCrack coaching assessment report with:
+1. Executive summary (3–4 sentences including overall score and key pattern)
+2. Phase-by-phase analysis (one paragraph per competency, grounded in the marker scores)
+3. Standout strengths (2–3 specific, evidence-based)
+4. Development priorities (2–3, ranked by urgency, with concrete behavioral suggestion for each)
+5. Recommended focus for next session (one clear, actionable directive)
+
+Tone: professional, direct, non-judgmental. Avoid generic coaching language. Ground every observation in the scores.`;
+
+  document.getElementById('report-text').innerHTML = '<div class="rs-spinner"><div class="spinner"></div>Generating report…</div>';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const text = data.content.map(b => b.text||'').join('');
+    document.getElementById('report-text').textContent = text;
+  } catch(e) {
+    document.getElementById('report-text').textContent = 'Report generation failed. Please try again.';
+  }
+}
+</script>
+</body>
+</html>

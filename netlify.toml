@@ -1,0 +1,6 @@
+[[edge_functions]]
+  path = "/api/claude"
+  function = "claude-proxy"
+
+[build]
+  publish = "public"
